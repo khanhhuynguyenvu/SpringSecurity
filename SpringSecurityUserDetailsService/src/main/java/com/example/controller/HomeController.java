@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -16,6 +17,7 @@ import org.springframework.web.servlet.ModelAndView;
 public class HomeController {
     @Autowired
     UserService userService;
+
 
     @RequestMapping(value = "/admin/vocab",method = RequestMethod.GET)
     public ModelAndView vocab(){
@@ -26,9 +28,38 @@ public class HomeController {
 
     @GetMapping(value = "/findbyname/{email}")
     @ResponseBody
-    public User findbyname(@PathVariable("email") String email){
+    public String findbyname(@PathVariable("email") String email){
         User user = userService.findUserByEmail(email);
-        return user;
+        if (user == null){
+            return "This email is not valid!";
+        }
+        else return "ID : "+user.getId()+" Email :"+user.getEmail();
+    }
+    //-------------------------------
+    @RequestMapping(value = "/admin/timemail",method = RequestMethod.GET)
+    public ModelAndView timemail(){
+        ModelAndView modelAndView = new ModelAndView();
+        User user = new User();
+        modelAndView.addObject("user",user);
+        modelAndView.setViewName("admin/timemail");
+        return modelAndView;
+    }
+    @RequestMapping(value = "/admin/timemail",method = RequestMethod.POST)
+    public ModelAndView timemailpost(@ModelAttribute User user, BindingResult bindingResult){
+        ModelAndView modelAndView = new ModelAndView();
+        User userExists = userService.findUserByEmail(user.getEmail());
+        if (userExists != null) {
+            bindingResult
+                    .rejectValue("email", "error.user",
+                            "This email has already being used by the other.");
+        }
+        if (bindingResult.hasErrors()) {
+            modelAndView.setViewName("admin/timemail");
+        } else {
+            modelAndView.addObject("successMessage", "You can use this Email");
+
+        }
+        return modelAndView;
     }
 
     @GetMapping(value = "addnewrole/{rolename}")
